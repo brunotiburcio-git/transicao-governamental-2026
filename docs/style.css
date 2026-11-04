@@ -75,15 +75,56 @@ dialog::backdrop { background: rgba(0, 0, 0, .45); }
 dialog form { display: grid; gap: .7rem; }
 .ajuda { margin-top: -.45rem; font-size: .8rem; color: var(--muted); }
 .contador { text-align: right; }
+.botoes #detalhe-excluir { margin-right: auto; }
+
+/* detalhe do registro */
+.detalhe { display: grid; gap: .6rem; }
+.detalhe h2 { overflow-wrap: anywhere; }
+.detalhe dl { margin: 0; display: grid; gap: .15rem; }
+.detalhe dt { margin-top: .5rem; font-size: .75rem; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); }
+.detalhe dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.detalhe dd a { color: var(--primary); }
+
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--surface-2); }
+.abrir-detalhe { display: block; width: 100%; padding: 0; border: 0; background: none; color: inherit; font-weight: 600; text-align: left; overflow-wrap: anywhere; }
+.tipo-pequeno { display: none; }
 .botoes { display: flex; justify-content: flex-end; gap: .5rem; }
 
-@media (max-width: 560px) {
-  .topo { flex-wrap: wrap; }
-  .topo-texto { flex-basis: calc(100% - 44px - .8rem); }
-  .quem { margin-left: auto; }
-}
-
-/* tela estreita: a tabela continua tabela e rola para o lado dentro da própria área */
+/* celular */
 @media (max-width: 720px) {
-  .filtros { grid-template-columns: minmax(0, 1fr); }
+  html { font-size: 16px; }
+  .filtros { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .filtros .busca { grid-column: 1 / -1; grid-row: 1; }
+  input, select, textarea { font-size: 16px; min-height: 44px; }  /* abaixo de 16px o iPhone dá zoom ao tocar */
+
+  .topo { gap: .55rem; padding: .5rem 16px; }
+  .topo img { width: 34px; height: 34px; }
+  .topo h1 { font-size: 1rem; }
+  .topo .apoio { font-size: .72rem; }
+  .quem { display: flex; flex-direction: column; align-items: flex-end; gap: .15rem; font-size: .72rem; white-space: normal; text-align: right; max-width: 40%; }
+
+  .pagina { padding-top: .75rem; gap: .65rem; }
+  .acoes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; }
+  .acoes button { min-height: 44px; }
+  .acoes #novo { grid-column: 1 / -1; }
+  .mensagem { min-height: 0; }
+  .mensagem:empty { display: none; }
+
+  /* a tabela mantém Responsável e Título; o resto abre ao tocar na linha */
+  .tabela-rolagem { overflow-x: visible; }
+  th:nth-child(2), td:nth-child(2), th:nth-child(n+4), td:nth-child(n+4) { display: none; }
+  th, td { padding: .7rem .6rem; }
+  td.titulo { min-width: 0; }
+  td.unidade { font-size: .78rem; }
+  .abrir-detalhe { font-size: .92rem; line-height: 1.3; }
+  .tipo-pequeno { display: block; margin-top: .15rem; font-size: .75rem; font-weight: 400; color: var(--muted); }
+
+  /* formulário e detalhe ocupam a tela toda, com os botões sempre visíveis */
+  dialog { width: 100%; max-width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; padding: 1rem 16px 0; border-radius: 0; }
+  dialog form, .detalhe { min-height: 100%; grid-template-rows: auto; align-content: start; }
+  .botoes { position: sticky; bottom: 0; padding: .6rem 0 calc(.6rem + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--line); }
+  .botoes button { min-height: 44px; flex: 1; }
+  .botoes #detalhe-excluir { margin-right: 0; }
+  textarea { min-height: 10rem; }
 }

@@ -27,6 +27,7 @@
   var filtroTipo = "";
   var filtroUnidade = "";
   var editandoId = null;
+  var detalheId = null;
 
   function $(id) { return document.getElementById(id); }
 
@@ -80,6 +81,7 @@
     token = "";
     conta = null;
     if ($("janela").open) $("janela").close();
+    if ($("detalhe").open) $("detalhe").close();
     $("sistema").hidden = true;
     $("entrada").hidden = false;
     $("login-erro").textContent = "Sua sessão terminou. Entre novamente.";
@@ -163,6 +165,8 @@
   function linha(r) {
     var descricao = [el("div", { className: "resumo", textContent: r.descricao })];
     if (r.ato) descricao.push(el("div", { className: "ato" }, ["Ato de criação: ", textoAto(r.ato)]));
+    var abrir = el("button", { type: "button", className: "abrir-detalhe", textContent: r.titulo });
+    abrir.addEventListener("click", function () { abrirDetalhe(r.id); });
     var botoes = [];
     if (podeAlterar(r)) {
       var editar = el("button", { type: "button", className: "discreto", textContent: "Editar" });
@@ -173,14 +177,40 @@
       excluir.addEventListener("click", function () { remover(r.id, excluir); });
       botoes = [editar, excluir];
     }
-    return el("tr", {}, [
+    var tr = el("tr", {}, [
       el("td", { className: "unidade", textContent: r.unidade || "" }),
       el("td", { className: "tipo", textContent: r.tipo }),
-      el("td", { className: "titulo", textContent: r.titulo }),
+      el("td", { className: "titulo" }, [
+        abrir,
+        el("span", { className: "tipo-pequeno", textContent: r.tipo })
+      ]),
       el("td", { className: "descricao" }, descricao),
       el("td", { className: "atualizado" }, [dataHora(r.atualizadoEm), el("br"), r.atualizadoPor || ""]),
       el("td", { className: "botoes-linha" }, botoes)
     ]);
+    tr.addEventListener("click", function (ev) {
+      if (!ev.target.closest("button, a")) abrirDetalhe(r.id);
+    });
+    return tr;
+  }
+
+  // Mostra o registro inteiro: a tabela corta a descrição, e no celular esconde algumas colunas.
+  function abrirDetalhe(id) {
+    var r = registros.find(function (x) { return x.id === id; });
+    if (!r) return;
+    detalheId = id;
+    var campos = [["Responsável", r.unidade], ["Tipo", r.tipo], ["Descrição", r.descricao]];
+    if (r.ato) campos.push(["Ato de criação", textoAto(r.ato)]);
+    campos.push(["Criado", dataHora(r.criadoEm) + " por " + r.criadoPor]);
+    campos.push(["Atualizado", dataHora(r.atualizadoEm) + " por " + r.atualizadoPor]);
+    var filhos = [];
+    campos.forEach(function (c) {
+      filhos.push(el("dt", { textContent: c[0] }), el("dd", {}, [c[1] || ""]));
+    });
+    $("detalhe-titulo").textContent = r.titulo;
+    $("detalhe-campos").replaceChildren(...filhos);
+    $("detalhe-editar").hidden = $("detalhe-excluir").hidden = !podeAlterar(r);
+    $("detalhe").showModal();
   }
 
   function desenhar() {
@@ -297,6 +327,7 @@
       avisar("Excluindo...");
       var resposta = await ocupado([botao], function () { return api("excluir", { id: id }); });
       registros = resposta.registros;
+      if ($("detalhe").open) $("detalhe").close();
       avisar("Registro excluído.");
       desenhar();
     } catch (e) {
@@ -391,6 +422,12 @@
     $("novo").addEventListener("click", function () { abrirFormulario(null); });
     $("atualizar").addEventListener("click", atualizar);
     $("cancelar").addEventListener("click", function () { $("janela").close(); });
+    $("detalhe-fechar").addEventListener("click", function () { $("detalhe").close(); });
+    $("detalhe-editar").addEventListener("click", function () {
+      $("detalhe").close();
+      abrirFormulario(detalheId);
+    });
+    $("detalhe-excluir").addEventListener("click", function () { remover(detalheId, this); });
     $("form-registro").addEventListener("submit", salvar);
     $("campo-unidade").addEventListener("change", function () { preencherTitulos(""); });
     $("campo-tipo").addEventListener("change", function () {
