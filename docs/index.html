@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Transição Governamental 2026</title>
+<link rel="icon" href="imagens/brasao.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<main id="entrada" class="entrada" hidden>
+  <form id="form-entrada" class="cartao-entrada">
+    <img src="imagens/brasao.png" alt="" width="64" height="64">
+    <h1>Transição Governamental 2026</h1>
+    <p class="apoio">Ministério das Cidades</p>
+    <label>Usuário <input id="login-usuario" autocomplete="username" required></label>
+    <label>Senha <input id="login-senha" type="password" autocomplete="current-password" required></label>
+    <p class="erro" id="login-erro" role="alert"></p>
+    <button type="submit" class="primario" id="login-entrar">Entrar</button>
+  </form>
+</main>
+
+<div id="sistema" hidden>
+  <header class="topo">
+    <img src="imagens/brasao.png" alt="" width="44" height="44">
+    <div class="topo-texto">
+      <h1>Transição Governamental 2026</h1>
+      <p class="apoio">Ministério das Cidades</p>
+    </div>
+    <p class="quem"><span id="usuario-nome"></span> <button type="button" id="sair" class="discreto">Sair</button></p>
+  </header>
+
+  <main class="pagina">
+    <div class="acoes">
+      <button type="button" class="primario" id="novo">Novo registro</button>
+      <button type="button" id="atualizar">Atualizar lista</button>
+      <button type="button" id="exportar-xlsx">Exportar Excel</button>
+      <button type="button" id="exportar-csv">Exportar CSV</button>
+      <button type="button" id="importar">Importar Excel</button>
+      <input type="file" id="arquivo" accept=".xlsx" multiple hidden>
+    </div>
+
+    <div class="filtros">
+      <label>Unidade <select id="filtro-unidade"></select></label>
+      <label>Tipo <select id="filtro-tipo"></select></label>
+      <label class="busca">Buscar <input type="search" id="busca" placeholder="Título ou descrição"></label>
+    </div>
+
+    <p id="mensagem" class="mensagem" role="status"></p>
+
+    <div class="tabela-rolagem" id="tabela">
+    <table>
+      <thead>
+        <tr><th>Responsável</th><th>Tipo</th><th>Título</th><th>Descrição</th><th>Atualizado</th><th><span class="oculto">Ações</span></th></tr>
+      </thead>
+      <tbody id="linhas"></tbody>
+    </table>
+    </div>
+    <p id="vazio" class="vazio" hidden></p>
+  </main>
+</div>
+
+<dialog id="janela">
+  <form id="form-registro" novalidate>
+    <h2 id="janela-titulo">Novo registro</h2>
+
+    <label>Responsável (unidade)
+      <select id="campo-unidade" required></select>
+    </label>
+
+    <label>Tipo
+      <select id="campo-tipo" required></select>
+    </label>
+    <p class="ajuda" id="tipo-ajuda"></p>
+
+    <label>Título
+      <select id="campo-titulo" required></select>
+    </label>
+    <label id="bloco-novo-titulo" hidden>Novo título
+      <input id="campo-novo-titulo" maxlength="300">
+    </label>
+
+    <label>Descrição
+      <textarea id="campo-descricao" rows="8" maxlength="2000" required></textarea>
+    </label>
+    <p class="ajuda contador" id="descricao-contador"></p>
+
+    <label id="bloco-ato" hidden>Ato de criação
+      <input id="campo-ato" maxlength="1000">
+    </label>
+
+    <p class="erro" id="form-erro" role="alert"></p>
+    <div class="botoes">
+      <button type="button" id="cancelar">Cancelar</button>
+      <button type="submit" class="primario" id="salvar">Salvar</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="js/config.js"></script>
+<script src="js/xlsx.mini.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

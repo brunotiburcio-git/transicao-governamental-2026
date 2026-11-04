@@ -1,0 +1,13 @@
+# ambiente Python
+.venv/
+__pycache__/
+*.pyc
+
+# planilhas com usuários, senhas e títulos (ficam só na máquina local)
+dados/
+/*.xlsx
+~$*.xlsx
+
+# documentos de trabalho
+*.docx
+*.pdf
