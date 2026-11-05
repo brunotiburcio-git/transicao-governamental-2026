@@ -14,3 +14,8 @@ dados/
 
 # material de apoio: publicado de propósito
 !docs/material_apoio/**
+
+# imagens soltas na raiz não vão para o GitHub
+/*.jpeg
+/*.jpg
+/*.png
