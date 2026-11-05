@@ -70,6 +70,13 @@ textarea { resize: vertical; }
 table { width: 100%; border-collapse: collapse; }
 th { text-align: left; font-size: .75rem; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
 th, td { padding: .6rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.ordenar { display: inline-flex; align-items: center; gap: .3rem; padding: 0; border: 0; border-radius: 0; background: none;
+           color: inherit; font-size: inherit; font-weight: 700; letter-spacing: inherit; text-transform: inherit; white-space: nowrap; }
+.ordenar:hover { color: var(--primary); }
+.ordenar::after { content: "\2195"; font-size: .85em; opacity: .45; }
+th[aria-sort="ascending"] .ordenar, th[aria-sort="descending"] .ordenar { color: var(--primary); }
+th[aria-sort="ascending"] .ordenar::after { content: "\25B2"; opacity: 1; }
+th[aria-sort="descending"] .ordenar::after { content: "\25BC"; opacity: 1; }
 td { font-size: .88rem; }
 td.unidade { white-space: nowrap; }
 td.tipo { min-width: 6.5rem; }

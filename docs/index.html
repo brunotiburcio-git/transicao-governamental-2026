@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -62,7 +62,7 @@
     <div class="tabela-rolagem" id="tabela">
     <table>
       <thead>
-        <tr><th>Responsável</th><th>Tipo</th><th>Título</th><th>Status</th><th>Descrição</th><th>Atualizado</th><th><span class="oculto">Ações</span></th></tr>
+        <tr id="cabecalho-itens"><th data-coluna="unidade"><button type="button" class="ordenar">Responsável</button></th><th data-coluna="tipo"><button type="button" class="ordenar">Tipo</button></th><th data-coluna="titulo"><button type="button" class="ordenar">Título</button></th><th data-coluna="status"><button type="button" class="ordenar">Status</button></th><th data-coluna="descricao"><button type="button" class="ordenar">Descrição</button></th><th data-coluna="atualizadoEm"><button type="button" class="ordenar">Atualizado</button></th><th><span class="oculto">Ações</span></th></tr>
       </thead>
       <tbody id="linhas"></tbody>
     </table>
@@ -142,6 +142,6 @@
 <script src="js/config.js"></script>
 <script src="js/material.js"></script>
 <script src="js/xlsx.mini.min.js"></script>
-<script src="js/app.js?v=3"></script>
+<script src="js/app.js?v=4"></script>
 </body>
 </html>

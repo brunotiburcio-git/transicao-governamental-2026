@@ -38,6 +38,8 @@
   var filtroStatus = "";
   var editandoId = null;
   var detalheId = null;
+  var ordemColuna = "";   // coluna escolhida no cabeçalho da tabela; vazio mantém a ordem padrão
+  var ordemSentido = 1;   // 1 crescente, -1 decrescente
 
   function $(id) { return document.getElementById(id); }
 
@@ -309,6 +311,25 @@
     $("vazio-material").hidden = !!arquivos.length;
   }
 
+  // Ordena pela coluna clicada. Vazios ficam sempre no fim, e o status segue a ordem do fluxo.
+  function ordenar(itens) {
+    if (!ordemColuna) return itens;
+    var posicao = function (status) { return listas.status.findIndex(function (s) { return s.nome === status; }); };
+    return itens.slice().sort(function (a, b) {
+      var x = a[ordemColuna] || "", y = b[ordemColuna] || "";
+      if (!x || !y) return (x ? 0 : 1) - (y ? 0 : 1);
+      if (ordemColuna === "status") return ordemSentido * (posicao(x) - posicao(y));
+      return ordemSentido * String(x).localeCompare(String(y), "pt-BR", { sensitivity: "base", numeric: true });
+    });
+  }
+
+  function desenharCabecalho() {
+    $("cabecalho-itens").querySelectorAll("th[data-coluna]").forEach(function (th) {
+      if (th.dataset.coluna === ordemColuna) th.setAttribute("aria-sort", ordemSentido > 0 ? "ascending" : "descending");
+      else th.removeAttribute("aria-sort");
+    });
+  }
+
   function desenharStatus(base) {
     var campo = $("filtro-status");
     campo.replaceChildren(el("option", { value: "", textContent: "Todos (" + base.length + ")" }), ...listas.status.map(function (s) {
@@ -324,10 +345,11 @@
       return (!filtroTipo || r.tipo === filtroTipo) && (!filtroUnidade || r.unidade === filtroUnidade) &&
              (!busca || normal(r.titulo + " " + r.descricao + " " + r.ato).includes(busca));
     });
-    var visiveis = base.filter(function (r) { return !filtroStatus || r.status === filtroStatus; });
+    var visiveis = ordenar(base.filter(function (r) { return !filtroStatus || r.status === filtroStatus; }));
 
     desenharFiltros();
     desenharStatus(base);
+    desenharCabecalho();
     $("linhas").replaceChildren(...visiveis.map(linha));
     $("tabela").hidden = !visiveis.length;
     $("vazio").hidden = !!visiveis.length;
@@ -552,6 +574,13 @@
     $("filtro-unidade").addEventListener("change", function () { filtroUnidade = this.value; desenhar(); });
     $("filtro-tipo").addEventListener("change", function () { filtroTipo = this.value; desenhar(); });
     $("filtro-status").addEventListener("change", function () { filtroStatus = this.value; desenhar(); });
+    $("cabecalho-itens").addEventListener("click", function (ev) {
+      var th = ev.target.closest("th[data-coluna]");
+      if (!th) return;
+      ordemSentido = ordemColuna === th.dataset.coluna ? -ordemSentido : 1;
+      ordemColuna = th.dataset.coluna;
+      desenhar();
+    });
     $("campo-descricao").addEventListener("input", atualizarContador);
     $("campo-titulo").addEventListener("change", function () {
       atualizarNovoTitulo();
