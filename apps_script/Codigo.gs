@@ -1,13 +1,21 @@
 // Servidor do sistema da Transição Governamental 2026, publicado como App da Web do Google Apps Script.
 // Fica dentro da planilha Google que guarda os dados. Abas usadas:
-//   usuarios (usuario | nome | senha | perfil), registros, opc_tipo, opc_unidade, opc_titulo.
+//   usuarios (usuario | nome | senha | perfil), registros, opc_tipo, opc_unidade, opc_titulo, opc_status.
 // Login e perfis são conferidos aqui, a cada pedido. Depois de alterar este arquivo, publique uma nova versão.
 
 var COLUNAS = [
   ['id', 'id'], ['unidade', 'Responsável'], ['tipo', 'Tipo'], ['titulo', 'Título'], ['descricao', 'Descrição'],
   ['ato', 'Ato de criação'], ['criadoPor', 'Criado por'], ['criadoEm', 'Criado em'],
-  ['atualizadoPor', 'Atualizado por'], ['atualizadoEm', 'Atualizado em']
+  ['atualizadoPor', 'Atualizado por'], ['atualizadoEm', 'Atualizado em'],
+  ['status', 'Status'], ['observacao', 'Observação']
 ];
+// As regras do fluxo dependem destes nomes; a aba opc_status só acrescenta a descrição de cada um.
+var AGUARDANDO = 'Aguardando preenchimento';
+var SALVO = 'Salvo';
+var ENVIADO = 'Enviado para validação';
+var VALIDADO = 'Validado';
+var DEVOLVIDO = 'Devolvido para revisão';
+var PERFIS = ['admin', 'cadastrador', 'validador', 'consulta'];
 var COLEGIADO = 'Colegiado';
 var MAX_DESCRICAO = 2000;
 var HORAS_SESSAO = 6;           // limite do cache do Google
@@ -43,7 +51,10 @@ function executar(pedido) {
   var u = autenticar(pedido.token);
   switch (pedido.acao) {
     case 'listar': return { usuario: u, listas: listas(), registros: lerRegistros() };
-    case 'salvar': return comTrava(function () { salvar(u, pedido.registro); return { registros: lerRegistros() }; });
+    case 'salvar': return comTrava(function () { salvar(u, pedido.registro, pedido.enviar); return { registros: lerRegistros() }; });
+    case 'enviar':
+    case 'validar':
+    case 'devolver': return comTrava(function () { mudarStatus(u, pedido.acao, pedido.id, pedido.observacao); return { registros: lerRegistros() }; });
     case 'excluir': return comTrava(function () { excluir(u, pedido.id); return { registros: lerRegistros() }; });
     case 'importar': return comTrava(function () { var p = importar(u, pedido.linhas); return { placar: p, registros: lerRegistros() }; });
     case 'sair': CacheService.getScriptCache().remove('s:' + pedido.token); return {};
@@ -83,6 +94,10 @@ function linhasDaAba(nome) {
 }
 
 function listas() {
+  var descricoes = {};
+  if (SpreadsheetApp.getActiveSpreadsheet().getSheetByName('opc_status')) {
+    linhasDaAba('opc_status').forEach(function (x) { descricoes[x.status] = x['descrição']; });
+  }
   var tipos = {};
   linhasDaAba('opc_tipo').forEach(function (t) { if (t.id_tipo) tipos[t.id_tipo] = t.tipo; });
   var titulos = [];
@@ -92,7 +107,10 @@ function listas() {
   return {
     tipos: Object.keys(tipos).map(function (k) { return tipos[k]; }),
     unidades: linhasDaAba('opc_unidade').map(function (u) { return u['responsável']; }).filter(String),
-    titulos: titulos
+    titulos: titulos,
+    status: [AGUARDANDO, SALVO, ENVIADO, VALIDADO, DEVOLVIDO].map(function (n) {
+      return { nome: n, descricao: descricoes[n] || '' };
+    })
   };
 }
 
@@ -101,6 +119,7 @@ function lerRegistros() {
   return aba('registros').getDataRange().getDisplayValues().slice(1).filter(function (l) { return l[0]; }).map(function (l) {
     var r = {};
     COLUNAS.forEach(function (c, j) { r[c[0]] = String(l[j] === undefined ? '' : l[j]); });
+    r.status = r.status || SALVO;
     return r;
   });
 }
@@ -114,7 +133,9 @@ function linhaDoId(id) {
 // Formato de texto: o que começa com = fica como texto, não vira fórmula.
 function escrever(numeroLinha, r) {
   var valores = COLUNAS.map(function (c) { return r[c[0]] || ''; });
-  aba('registros').getRange(numeroLinha, 1, 1, COLUNAS.length).setNumberFormat('@').setValues([valores]);
+  var a = aba('registros');
+  a.getRange(1, 1, 1, COLUNAS.length).setValues([COLUNAS.map(function (c) { return c[1]; })]);  // inclui colunas novas
+  a.getRange(numeroLinha, 1, 1, COLUNAS.length).setNumberFormat('@').setValues([valores]);
 }
 
 // ---------- login ----------
@@ -131,7 +152,7 @@ function entrar(pedido) {
   var tentativas = Number(cache.get(chave)) || 0;
   if (tentativas >= MAX_TENTATIVAS) falhar('Muitas tentativas. Aguarde ' + MINUTOS_BLOQUEIO + ' minutos.');
   var u = buscarUsuario(login);
-  var perfilValido = u && ['admin', 'cadastrador', 'consulta'].indexOf(u.perfil.toLowerCase()) >= 0;
+  var perfilValido = u && PERFIS.indexOf(u.perfil.toLowerCase()) >= 0;
   if (!perfilValido || !u.senha || u.senha !== String(pedido.senha || '').trim()) {
     cache.put(chave, String(tentativas + 1), MINUTOS_BLOQUEIO * 60);
     falhar('Usuário ou senha inválidos.');
@@ -167,37 +188,72 @@ function limpo(r) {
   return c;
 }
 
-function salvar(u, dados) {
-  if (u.perfil === 'consulta') falhar('Seu perfil é apenas de consulta.');
+// Cadastrador só mexe nos próprios registros, enquanto não estiverem com o validador.
+function podeAlterar(u, r) {
+  if (u.perfil === 'admin') return true;
+  return u.perfil === 'cadastrador' && r.criadoPor === u.usuario && (r.status === SALVO || r.status === DEVOLVIDO);
+}
+
+function registroDoId(id) {
+  var r = lerRegistros().filter(function (x) { return x.id === String(id); })[0];
+  if (!r) falhar('Este registro não existe mais. Atualize a página.');
+  return r;
+}
+
+function salvar(u, dados, enviar) {
+  if (u.perfil !== 'admin' && u.perfil !== 'cadastrador') falhar('Seu perfil não pode cadastrar.');
   var r = limpo(dados || {});
   if (!validar(r, listas())) falhar('Confira responsável, tipo, título e descrição (até 2.000 caracteres).');
   var agora = new Date().toISOString();
   var linha;
   if (r.id) {
+    var atual = registroDoId(r.id);
+    if (!podeAlterar(u, atual)) falhar('Você só pode alterar os próprios registros, antes de enviar para validação.');
     linha = linhaDoId(r.id);
-    if (!linha) falhar('Este registro não existe mais. Atualize a página.');
-    var atual = lerRegistros().filter(function (x) { return x.id === r.id; })[0];
-    if (u.perfil !== 'admin' && atual.criadoPor !== u.usuario) falhar('Você só pode alterar os próprios registros.');
     r.criadoPor = atual.criadoPor;
     r.criadoEm = atual.criadoEm;
+    r.observacao = atual.observacao;
   } else {
     linha = aba('registros').getLastRow() + 1;
     r.id = Utilities.getUuid();
     r.criadoPor = u.usuario;
     r.criadoEm = agora;
+    r.observacao = '';
   }
+  r.status = enviar ? ENVIADO : SALVO;
   r.atualizadoPor = u.usuario;
   r.atualizadoEm = agora;
   escrever(linha, r);
 }
 
+function mudarStatus(u, acao, id, observacao) {
+  var r = registroDoId(id);
+  var analista = u.perfil === 'admin' || u.perfil === 'validador';
+  var obs = String(observacao || '').trim();
+  if (obs.length > MAX_DESCRICAO) falhar('A observação deve ter no máximo 2.000 caracteres.');
+  if (acao === 'enviar') {
+    if (!podeAlterar(u, r) || (r.status !== SALVO && r.status !== DEVOLVIDO)) falhar('Este registro não pode ser enviado agora.');
+    r.status = ENVIADO;
+  } else if (acao === 'validar') {
+    if (!analista) falhar('Só o validador pode validar.');
+    if (r.status !== ENVIADO) falhar('Este registro não está aguardando validação.');
+    r.status = VALIDADO;
+    r.observacao = obs;
+  } else {
+    if (!analista) falhar('Só o validador pode devolver.');
+    if (r.status !== ENVIADO && r.status !== VALIDADO) falhar('Este registro não pode ser devolvido agora.');
+    if (!obs) falhar('Explique o motivo da devolução.');
+    r.status = DEVOLVIDO;
+    r.observacao = obs;
+  }
+  r.atualizadoPor = u.usuario;
+  r.atualizadoEm = new Date().toISOString();
+  escrever(linhaDoId(id), r);
+}
+
 function excluir(u, id) {
-  if (u.perfil === 'consulta') falhar('Seu perfil é apenas de consulta.');
-  var linha = linhaDoId(id);
-  if (!linha) falhar('Este registro não existe mais. Atualize a página.');
-  var atual = lerRegistros().filter(function (x) { return x.id === id; })[0];
-  if (u.perfil !== 'admin' && atual.criadoPor !== u.usuario) falhar('Você só pode excluir os próprios registros.');
-  aba('registros').deleteRow(linha);
+  if (!podeAlterar(u, registroDoId(id))) falhar('Você só pode excluir os próprios registros, antes de enviar para validação.');
+  aba('registros').deleteRow(linhaDoId(id));
 }
 
 // Junta pelo id: registro novo entra; registro existente só muda se a planilha importada for mais recente.
@@ -216,6 +272,7 @@ function importar(u, linhas) {
     r.criadoEm = r.criadoEm || r.atualizadoEm;
     r.criadoPor = r.criadoPor || u.usuario;
     r.atualizadoPor = r.atualizadoPor || u.usuario;
+    if ([SALVO, ENVIADO, VALIDADO, DEVOLVIDO].indexOf(r.status) < 0) r.status = SALVO;
     var atual = atuais[r.id];
     if (!atual) {
       escrever(aba('registros').getLastRow() + 1, r);

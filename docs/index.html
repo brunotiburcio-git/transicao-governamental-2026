@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 
@@ -35,7 +35,12 @@
     <p class="quem"><span id="usuario-nome"></span> <button type="button" id="sair" class="discreto">Sair</button></p>
   </header>
 
-  <main class="pagina">
+  <nav class="abas" aria-label="Áreas do sistema">
+    <button type="button" id="aba-itens" aria-pressed="true">Itens</button>
+    <button type="button" id="aba-material" aria-pressed="false">Material de apoio</button>
+  </nav>
+
+  <main class="pagina" id="area-itens">
     <div class="acoes">
       <button type="button" class="primario" id="novo">Novo registro</button>
       <button type="button" id="atualizar">Atualizar lista</button>
@@ -48,6 +53,7 @@
     <div class="filtros">
       <label>Unidade <select id="filtro-unidade"></select></label>
       <label>Tipo <select id="filtro-tipo"></select></label>
+      <label>Status <select id="filtro-status"></select></label>
       <label class="busca">Buscar <input type="search" id="busca" placeholder="Título ou descrição"></label>
     </div>
 
@@ -56,12 +62,23 @@
     <div class="tabela-rolagem" id="tabela">
     <table>
       <thead>
-        <tr><th>Responsável</th><th>Tipo</th><th>Título</th><th>Descrição</th><th>Atualizado</th><th><span class="oculto">Ações</span></th></tr>
+        <tr><th>Responsável</th><th>Tipo</th><th>Título</th><th>Status</th><th>Descrição</th><th>Atualizado</th><th><span class="oculto">Ações</span></th></tr>
       </thead>
       <tbody id="linhas"></tbody>
     </table>
     </div>
     <p id="vazio" class="vazio" hidden></p>
+  </main>
+
+  <main class="pagina" id="area-material" hidden>
+    <p class="apoio">Documentos para consulta. Clique no nome para abrir ou em Baixar para salvar no computador.</p>
+    <div class="tabela-rolagem" id="tabela-material">
+      <table>
+        <thead><tr><th>Arquivo</th><th>Tamanho</th><th>Data</th><th><span class="oculto">Baixar</span></th></tr></thead>
+        <tbody id="linhas-material"></tbody>
+      </table>
+    </div>
+    <p id="vazio-material" class="vazio" hidden>Nenhum documento disponível ainda.</p>
   </main>
 </div>
 
@@ -97,7 +114,8 @@
     <p class="erro" id="form-erro" role="alert"></p>
     <div class="botoes">
       <button type="button" id="cancelar">Cancelar</button>
-      <button type="submit" class="primario" id="salvar">Salvar</button>
+      <button type="submit" id="salvar">Salvar</button>
+      <button type="button" class="primario" id="salvar-enviar">Salvar e enviar para validação</button>
     </div>
   </form>
 </dialog>
@@ -106,16 +124,24 @@
   <div class="detalhe">
     <h2 id="detalhe-titulo"></h2>
     <dl id="detalhe-campos"></dl>
+    <label id="bloco-analise" hidden>Observação da validação (obrigatória para devolver)
+      <textarea id="detalhe-observacao" rows="3" maxlength="2000"></textarea>
+    </label>
+    <p class="erro" id="detalhe-erro" role="alert"></p>
     <div class="botoes">
       <button type="button" id="detalhe-excluir" class="perigo">Excluir</button>
       <button type="button" id="detalhe-editar">Editar</button>
-      <button type="button" id="detalhe-fechar" class="primario">Fechar</button>
+      <button type="button" id="detalhe-devolver">Devolver para revisão</button>
+      <button type="button" id="detalhe-validar" class="primario">Validar</button>
+      <button type="button" id="detalhe-enviar" class="primario">Enviar para validação</button>
+      <button type="button" id="detalhe-fechar">Fechar</button>
     </div>
   </div>
 </dialog>
 
 <script src="js/config.js"></script>
+<script src="js/material.js"></script>
 <script src="js/xlsx.mini.min.js"></script>
-<script src="js/app.js?v=2"></script>
+<script src="js/app.js?v=3"></script>
 </body>
 </html>

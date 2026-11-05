@@ -1,0 +1,2 @@
+Coloque aqui os documentos do Material de apoio e rode publicar_material.bat.
+Atencao: os arquivos desta pasta ficam publicos na internet.

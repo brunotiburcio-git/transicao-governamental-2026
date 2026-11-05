@@ -19,12 +19,15 @@ planilha_google.xlsx    planilha inicial para enviar ao Google. Não vai para o 
 tabelas_sistema.xlsx    origem das listas. Não vai para o GitHub
 dados/usuarios.xlsx     primeira versão dos usuários. Não vai para o GitHub
 ver_pagina.bat          abre a página em http://localhost:8765 para conferir
+publicar_material.bat   atualiza a lista do material de apoio e publica no GitHub
 docs/                   o site publicado
   index.html
   style.css
   imagens/
+  material_apoio/       documentos para baixar (ficam públicos)
   js/app.js             telas, exportação e importação
   js/config.js          endereço do servidor no Google
+  js/material.js        gerado: lista do material de apoio
   js/xlsx.mini.min.js   biblioteca SheetJS, para ler e gravar Excel
 ```
 
@@ -49,16 +52,40 @@ O endereço continua o mesmo.
 Tudo é feito na planilha Google e vale na hora, sem publicar o site de novo:
 
 - **Usuários:** aba `usuarios`, com as colunas `usuario | nome | senha | perfil`. Para tirar um acesso, apague a linha.
-- **Listas:** abas `opc_tipo`, `opc_unidade` e `opc_titulo`.
+- **Listas:** abas `opc_tipo`, `opc_unidade`, `opc_titulo` e `opc_status`. Na aba `opc_status`, só a descrição pode mudar:
+  os nomes dos status fazem parte das regras do `Codigo.gs`.
 - **Dados:** aba `registros`. Evite alterar a ordem das colunas. Para baixar: *Arquivo > Fazer download > Microsoft Excel*.
 
 ## Perfis
 
 | Perfil | Pode |
 |---|---|
-| admin | tudo: cadastrar, editar e excluir qualquer registro, exportar e importar |
-| cadastrador | cadastrar, editar e excluir os próprios registros, exportar e consultar tudo |
+| admin | tudo: cadastrar, editar e excluir qualquer registro, validar, devolver, exportar e importar |
+| cadastrador | cadastrar, editar, excluir e enviar os próprios registros, exportar e consultar tudo |
+| validador | validar ou devolver os registros enviados, exportar e consultar tudo |
 | consulta | apenas visualizar |
+
+## Status
+
+| Status | Quando |
+|---|---|
+| Aguardando preenchimento | título previsto em `opc_titulo` sem registro (não é gravado na planilha) |
+| Salvo | registro gravado, ainda editável pelo cadastrador |
+| Enviado para validação | cadastrador enviou; ele não edita mais, só o validador decide |
+| Validado | validador aprovou |
+| Devolvido para revisão | validador devolveu com o motivo; cadastrador corrige e envia de novo |
+
+Se o admin editar um registro enviado ou validado, ele volta para Salvo.
+
+## Material de apoio
+
+1. Coloque os arquivos em `docs/material_apoio/`.
+2. Dê dois cliques em `publicar_material.bat`. Em alguns minutos, eles aparecem na área Material de apoio do site.
+
+Para tirar um arquivo, apague-o da pasta e rode o `.bat` de novo.
+
+**Os arquivos dessa pasta ficam públicos:** o login só esconde a lista, e quem tiver o endereço do arquivo baixa sem senha.
+Não coloque nela nada que não possa ser público.
 
 ## Publicar no GitHub Pages
 

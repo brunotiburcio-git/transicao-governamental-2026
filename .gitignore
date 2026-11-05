@@ -11,3 +11,6 @@ dados/
 # documentos de trabalho
 *.docx
 *.pdf
+
+# material de apoio: publicado de propósito
+!docs/material_apoio/**
