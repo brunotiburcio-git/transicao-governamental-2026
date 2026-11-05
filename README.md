@@ -54,7 +54,10 @@ Tudo é feito na planilha Google e vale na hora, sem publicar o site de novo:
 - **Usuários:** aba `usuarios`, com as colunas `usuario | nome | senha | perfil`. Para tirar um acesso, apague a linha.
 - **Listas:** abas `opc_tipo`, `opc_unidade`, `opc_titulo` e `opc_status`. Na aba `opc_status`, só a descrição pode mudar:
   os nomes dos status fazem parte das regras do `Codigo.gs`.
-- **Dados:** aba `registros`. Evite alterar a ordem das colunas. Para baixar: *Arquivo > Fazer download > Microsoft Excel*.
+- **Dados:** aba `registros`, com o status atual de cada item. Evite alterar a ordem das colunas.
+  Para baixar: *Arquivo > Fazer download > Microsoft Excel*.
+- **Histórico:** aba `historico`, criada na primeira gravação, com data, usuário, status anterior e novo de cada mudança.
+  Não edite essa aba.
 
 ## Perfis
 

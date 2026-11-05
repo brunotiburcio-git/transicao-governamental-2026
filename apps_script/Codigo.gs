@@ -1,6 +1,7 @@
 // Servidor do sistema da Transição Governamental 2026, publicado como App da Web do Google Apps Script.
 // Fica dentro da planilha Google que guarda os dados. Abas usadas:
-//   usuarios (usuario | nome | senha | perfil), registros, opc_tipo, opc_unidade, opc_titulo, opc_status.
+//   usuarios (usuario | nome | senha | perfil), registros, opc_tipo, opc_unidade, opc_titulo, opc_status
+//   e historico (criada aqui na primeira gravação, com cada mudança de cada registro).
 // Login e perfis são conferidos aqui, a cada pedido. Depois de alterar este arquivo, publique uma nova versão.
 
 var COLUNAS = [
@@ -138,6 +139,18 @@ function escrever(numeroLinha, r) {
   a.getRange(numeroLinha, 1, 1, COLUNAS.length).setNumberFormat('@').setValues([valores]);
 }
 
+// Acrescenta uma linha ao histórico. Sempre chamada dentro da trava de gravação.
+function registrarHistorico(r, anterior, novo, usuario, observacao) {
+  var planilha = SpreadsheetApp.getActiveSpreadsheet();
+  var h = planilha.getSheetByName('historico');
+  if (!h) {
+    h = planilha.insertSheet('historico');
+    h.getRange(1, 1, 1, 8).setValues([['Data', 'id', 'Responsável', 'Título', 'Status anterior', 'Status novo', 'Usuário', 'Observação']]);
+  }
+  var valores = [new Date().toISOString(), r.id, r.unidade, r.titulo, anterior || '', novo, usuario, observacao || ''];
+  h.getRange(h.getLastRow() + 1, 1, 1, 8).setNumberFormat('@').setValues([valores]);
+}
+
 // ---------- login ----------
 function buscarUsuario(login) {
   login = String(login || '').trim().toLowerCase();
@@ -206,10 +219,12 @@ function salvar(u, dados, enviar) {
   if (!validar(r, listas())) falhar('Confira responsável, tipo, título e descrição (até 2.000 caracteres).');
   var agora = new Date().toISOString();
   var linha;
+  var anterior = '';
   if (r.id) {
     var atual = registroDoId(r.id);
     if (!podeAlterar(u, atual)) falhar('Você só pode alterar os próprios registros, antes de enviar para validação.');
     linha = linhaDoId(r.id);
+    anterior = atual.status;
     r.criadoPor = atual.criadoPor;
     r.criadoEm = atual.criadoEm;
     r.observacao = atual.observacao;
@@ -224,10 +239,12 @@ function salvar(u, dados, enviar) {
   r.atualizadoPor = u.usuario;
   r.atualizadoEm = agora;
   escrever(linha, r);
+  registrarHistorico(r, anterior, r.status, u.usuario, '');
 }
 
 function mudarStatus(u, acao, id, observacao) {
   var r = registroDoId(id);
+  var anterior = r.status;
   var analista = u.perfil === 'admin' || u.perfil === 'validador';
   var obs = String(observacao || '').trim();
   if (obs.length > MAX_DESCRICAO) falhar('A observação deve ter no máximo 2.000 caracteres.');
@@ -249,11 +266,14 @@ function mudarStatus(u, acao, id, observacao) {
   r.atualizadoPor = u.usuario;
   r.atualizadoEm = new Date().toISOString();
   escrever(linhaDoId(id), r);
+  registrarHistorico(r, anterior, r.status, u.usuario, obs);
 }
 
 function excluir(u, id) {
-  if (!podeAlterar(u, registroDoId(id))) falhar('Você só pode excluir os próprios registros, antes de enviar para validação.');
+  var r = registroDoId(id);
+  if (!podeAlterar(u, r)) falhar('Você só pode excluir os próprios registros, antes de enviar para validação.');
   aba('registros').deleteRow(linhaDoId(id));
+  registrarHistorico(r, r.status, 'Excluído', u.usuario, '');
 }
 
 // Junta pelo id: registro novo entra; registro existente só muda se a planilha importada for mais recente.
@@ -276,10 +296,12 @@ function importar(u, linhas) {
     var atual = atuais[r.id];
     if (!atual) {
       escrever(aba('registros').getLastRow() + 1, r);
+      registrarHistorico(r, '', r.status, u.usuario, 'Importado');
       atuais[r.id] = r;
       placar.novos++;
     } else if (r.atualizadoEm > atual.atualizadoEm) {
       escrever(linhaDoId(r.id), r);
+      registrarHistorico(r, atual.status, r.status, u.usuario, 'Importado');
       atuais[r.id] = r;
       placar.atualizados++;
     } else {
